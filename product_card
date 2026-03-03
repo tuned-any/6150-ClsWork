@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Card Web Component</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: #d1d1eb;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    padding: 2rem;
+  }
+  h1 {
+    color: #0f0f10;
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: center;
+  }
+  #event-log {
+    background: #535357;
+    border: 1px solid #2d2d3d;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    color: #a0aec0;
+    font-size: 0.8rem;
+    width: 100%;
+    max-width: 680px;
+    min-height: 52px;
+    font-family: 'Courier New', monospace;
+  }
+  #event-log span { color: #68d391; }
+</style>
+</head>
+<body>
+
+<h1>Web Components</h1>
+
+<div class="grid">
+
+  <product-card name="AI Activated Belt" price="209.99">
+    <img slot="image" src="https://placehold.co/600x400/000000/FFF" alt="Belt">
+    <span slot="description">Premium noise-cancelling buckles with holes that fits any size. For both sexes.</span>
+  </product-card>
+
+  <product-card name="Electronic keys" price="129.00">
+    <img slot="image" src="https://placehold.co/600x400/000000/F27171" alt="Keys">
+    <span slot="description">Compact MGB layout with light rays to activate connection with the controller.</span>
+  </product-card>
+
+  <product-card name="Virtual Phone Hub" price="49.95">
+    <img slot="image" src="https://placehold.co/600x400/000000/E21a1c" alt="Hub">
+    <span slot="description">7-in-1 hub with 4K HDMI, compatible with all kinds of phone. With USB 3.0 ports.</span>
+  </product-card>
+
+</div>
+
+<div id="event-log">Purchase events will appear here…</div>
+
+<!-- Defines Custom Element -->
+<script>
+class ProductCard extends HTMLElement {
+
+  /* Observed attributes — triggers */
+  static get observedAttributes() {
+    return ['name', 'price'];
+  }
+
+  constructor() {
+    super();
+    /* A closed Shadow DOM - Attach */
+    this._shadow = this.attachShadow({ mode: 'open' });
+  }
+
+  /* Lifecycle: element added to DOM */
+  connectedCallback() {
+    this._render();
+    this._shadow
+      .querySelector('.btn-buy')
+      .addEventListener('click', () => this._onPurchase());
+  }
+
+  
+  attributeChangedCallback(attr, oldVal, newVal) {
+    if (oldVal !== newVal && this._shadow.innerHTML) this._render();
+  }
+
+  /* Shadow DOM content */
+  _render() {
+    const name  = this.getAttribute('name')  ?? 'Product';
+    const price = this.getAttribute('price') ?? '0.00';
+
+    this._shadow.innerHTML = `
+      <style>
+        /* Styles fully encapsulated */
+        :host {
+          display: inline-block;
+          --accent: #818cf8;
+          --card-bg: #16161f;
+          --radius: 14px;
+        }
+
+        .card {
+          background: var(--card-bg);
+          border: 1px solid #2a2a3d;
+          border-radius: var(--radius);
+          width: 280px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 4px 24px rgba(0,0,0,.4);
+        }
+        
+        /* Image slot wrapper */
+        .img-wrapper {
+          overflow: hidden;
+          background: #0d0d14;
+        }
+        ::slotted(img) {
+          width: 100%;
+          height: 180px;
+          object-fit: cover;
+          display: block;
+          transition: transform .35s;
+        }
+        .card:hover ::slotted(img) { transform: scale(1.04); }
+
+        /* Body */
+        .body {
+          padding: 1.1rem 1.25rem 1.25rem;
+          display: flex;
+          flex-direction: column;
+          gap: .6rem;
+          flex: 1;
+        }
+
+        .name {
+          font-size: 1rem;
+          font-weight: 700;
+          color: #e2e8f0;
+          letter-spacing: .01em;
+        }
+
+        .desc {
+          font-size: .82rem;
+          color: #7c8caa;
+          line-height: 1.55;
+          flex: 1;
+        }
+
+        /* Description slot text */
+        ::slotted(span) {
+          font-size: .82rem;
+          color: #7c8caa;
+          line-height: 1.55;
+        }
+
+        .footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: .5rem;
+        }
+
+        .price {
+          font-size: 1.2rem;
+          font-weight: 800;
+          color: var(--accent);
+          letter-spacing: -.01em;
+        }
+        .price::before { content: '$'; font-size: .8em; font-weight: 500; }
+
+        .btn-buy {
+          background: var(--accent);
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          padding: .45rem 1rem;
+          font-size: .82rem;
+          font-weight: 700;
+          cursor: pointer;
+          letter-spacing: .03em;
+          transition: background .15s, transform .1s;
+        }
+        .btn-buy:hover  { background: #6366f1; }
+        .btn-buy:active { transform: scale(.95); }
+      </style>
+
+      <div class="card">
+        <div class="img-wrapper">
+          <slot name="image"></slot>
+        </div>
+        <div class="body">
+          <div class="name">${this._escape(name)}</div>
+          <div class="desc">
+            <slot name="description"></slot>
+          </div>
+          <div class="footer">
+            <span class="price">${parseFloat(price).toFixed(2)}</span>
+            <button class="btn-buy">Buy Now</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    /* Re-attach listener */
+    this._shadow
+      .querySelector('.btn-buy')
+      .addEventListener('click', () => this._onPurchase());
+  }
+
+ 
+  _onPurchase() {
+    const name  = this.getAttribute('name')  ?? 'Product';
+    const price = this.getAttribute('price') ?? '0.00';
+
+    const evt = new CustomEvent('purchase', {
+      bubbles: true,       // bubbles up through the DOM
+      composed: true,      // crosses the Shadow DOM boundary
+      detail: { name, price: parseFloat(price) }
+    });
+    this.dispatchEvent(evt);
+  }
+
+  
+  _escape(str) {
+    return str.replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+}
+
+/* Register the custom element */
+customElements.define('product-card', ProductCard);
+
+/* Listen for purchase events on the document */
+const log = document.getElementById('event-log');
+document.addEventListener('purchase', e => {
+  const { name, price } = e.detail;
+  log.innerHTML =
+    `<span>New purchase</span>  — <b style="color:#e2e8f0">${name}</b> `
+  + `added to cart for <span>$${price.toFixed(2)}</span> `;
+});
+</script>
+</body>
+</html>
